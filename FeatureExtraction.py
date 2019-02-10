@@ -2,6 +2,20 @@ import numpy as np
 from math import log2
 import csv
 
+def getX(features, trainLines):
+
+    X_counts = np.zeros( (len(trainLines), len(features)) )
+    X_occurs = np.zeros( (len(trainLines), len(features)) )
+
+    # for unigram features
+    for i in range(0, len(trainLines)):
+        for j in range(0,len(features)):
+            X_counts[i][j] = countTerm( features[j], trainLines[i])
+            if X_counts[i][j] > 0:
+                X_occurs[i][j] = 1
+
+    return X_counts, X_occurs
+
 
 def countTerm (term, document):
     count = 0
