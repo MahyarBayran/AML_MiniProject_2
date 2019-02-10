@@ -1,0 +1,92 @@
+### this one is badly implemented and takes a lot of time to process
+
+
+import numpy as np
+from math import log2
+import csv
+import logging
+
+logger = logging.getLogger(__name__)
+
+def countTerm (term, document):
+    count = 0
+    for t in document:
+        if term == t:
+            count += 1
+    return count
+
+def getIgain (word, trainLines, trainY):
+    # p (Y=y) = 0.5 (fair training data)
+    # need P(Xj = xj) and P(Xj=xj, Y=y)
+    countXj = {}
+    countXjYy = {}
+    i = 0
+    t_size = len(trainLines)
+
+    for line in trainLines:
+        c = countTerm (word, line)
+        if c > 0:
+            if c not in countXj.keys():
+                countXj[c] =  1
+                if trainY[i] == 1: 
+                    countXjYy[(c,1)] = 1
+                    countXjYy[(c,0)] = 0
+                else:
+                    countXjYy[(c,0)] = 1
+                    countXjYy[(c,1)] = 0
+
+            else:
+                countXj[c] = countXj[c] + 1
+                if trainY[i] == 1:
+                    countXjYy[(c,1)] = countXjYy[(c,1)] + 1
+                else:
+                    countXjYy[(c,0)] = countXjYy[(c,0)] + 1
+        i += 1
+        
+    # assuming the training data is even
+    I = 0
+    for c in countXj.keys():
+        for y in [0,1]:
+            Pxj = countXj[c] / t_size
+            PxjYy = countXjYy[(c,y)]  / (t_size/2)
+            PYy = 0.5
+            if (Pxj > 0) & (PxjYy > 0):
+                I += PYy * PxjYy * log2 ( PxjYy /Pxj )
+        
+    return I
+
+def FEMain(trainLines, trainY, numFeatures):
+    IGain = {} # store information gain for choosing each feature
+    # Unigrams
+    # needs to be optimized, do the getIgain here instead of calling the function
+    for line in trainLines:
+        i = 0
+        print ("In line: %s"%i)
+        for word in line:
+            if word not in IGain.keys():
+                IGain[word] = getIgain ( word, trainLines, trainY )
+   
+
+
+    # Any other features in mind? put it here for I calculation
+    '''
+    
+    '''
+
+    sortedI = [(k, IGain[k]) for k in sorted(IGain, key=IGain.get, reverse=True)]
+    #for word, I in sortedI[0:100]:
+    #    print( word, ": ", I)
+
+    # Write the sortedI
+    with open('sortedI.csv', 'w', errors='replace') as f:
+        for key, value in sortedI:
+            f.write("%s,%s\n"%(key, value))
+    
+    features = []
+    index = 0
+    for key, value in sortedI:
+        if index < numFeatures:
+            features.append(key)
+        index +=1
+            
+    return features
