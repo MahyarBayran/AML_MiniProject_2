@@ -1,0 +1,2 @@
+class BernoulliNaiveBayes(object):
+    pass
