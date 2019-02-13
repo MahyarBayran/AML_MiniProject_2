@@ -1,79 +1,49 @@
 import logging
-import os
-import pickle
-from copy import deepcopy
 from datetime import datetime
 
 import numpy as np
-import pandas as pd
 
-from data import helpers, pre_processing, feature_extraction
-
-logger = logging.getLogger(__name__)
+from data import helpers
 
 
-def setup_logger():
+def setup():
+    np.random.seed(2019)
+
     log_path = datetime.now().strftime('./logs/%Y-%m-%d-%H-%M-%S.log')
     logging.basicConfig(filename=log_path, level=logging.INFO)
     logging.getLogger().addHandler(logging.StreamHandler())
 
 
-def setup_numpy():
-    np.random.seed(2019)
+def gaussian_naive_bayes(x_tr, y_tr, x_ts):
+    from sklearn.naive_bayes import GaussianNB
+    from sklearn.base import clone
+
+    cl = GaussianNB()
+    helpers.k_fold_cross_validation(4, clone(cl), x_tr, y_tr)
+    helpers.predict_test(clone(cl), x_tr, y_tr, x_ts, 'gaussian_naive_bayes')
 
 
-def extract_features(ds, tf_top_n, bf_top_n):
-    ds_ef = deepcopy(ds)
-    ds_ef = feature_extraction.top_n_term_frequency(ds_ef, tf_top_n)
-    ds_ef = feature_extraction.top_n_term_occurrence(ds_ef, tf_top_n)
-    ds_ef = feature_extraction.top_n_term_frequency(ds_ef, bf_top_n)
-    ds_ef = feature_extraction.top_n_term_occurrence(ds_ef, bf_top_n)
-    return ds_ef
+def bernoulli_naive_bayes(x_tr, y_tr, x_ts):
+    from sklearn.naive_bayes import BernoulliNB
+    from sklearn.base import clone
 
-
-def prepare_dataset(ds):
-    ds_pd = pd.DataFrame.from_dict(ds, dtype=np.float64)
-    y = ds_pd.get('label', None)
-    x = ds_pd.drop(['text', 'text_pp', 'tf', 'bf'], axis=1)
-    return x, y
+    cl = BernoulliNB()
+    helpers.k_fold_cross_validation(4, clone(cl), x_tr, y_tr)
+    helpers.predict_test(clone(cl), x_tr, y_tr, x_ts, 'bernoulli_naive_bayes')
 
 
 def main():
-    setup_logger()
-    setup_numpy()
+    tr, ts = helpers.get_pre_processed_dataset()
+    tf_top = helpers.get_tf_top(tr)
+    bf_top = helpers.get_bf_top(tr)
 
-    pre_processed_pickle_path = './files/pre_processed_dataset.pkl'
-    if os.path.exists(pre_processed_pickle_path):
-        with open(pre_processed_pickle_path, 'rb') as f:
-            tr, ts = pickle.load(f)
-    else:
-        ds = helpers.load_dataset()
-        ds_pp = pre_processing.pre_process(ds)
-        tr, ts = helpers.split_dataset(ds_pp)
-        with open(pre_processed_pickle_path, 'wb') as f:
-            pickle.dump((tr, ts), f, pickle.HIGHEST_PROTOCOL)
+    tr, ts = list(map(lambda x: helpers.extract_features(x, tf_top[:40], bf_top[:15]), (tr, ts)))
+    (x_tr, y_tr), (x_ts, _) = list(map(lambda x: helpers.prepare_dataset(x), (tr, ts)))
 
-    tf_top_n_pickle_path = './files/tf_top_n.pkl'
-    if os.path.exists(tf_top_n_pickle_path):
-        with open(tf_top_n_pickle_path, 'rb') as f:
-            tf_top_n = pickle.load(f)
-    else:
-        tf_top_n = helpers.top_n_information_gain(tr, 'tf', 100)
-        with open(tf_top_n_pickle_path, 'wb') as f:
-            pickle.dump(tf_top_n, f, pickle.HIGHEST_PROTOCOL)
-
-    bf_top_n_pickle_path = './files/bf_top_n.pkl'
-    if os.path.exists(bf_top_n_pickle_path):
-        with open(bf_top_n_pickle_path, 'rb') as f:
-            bf_top_n = pickle.load(f)
-    else:
-        bf_top_n = helpers.top_n_information_gain(tr, 'bf', 100)
-        with open(bf_top_n_pickle_path, 'wb') as f:
-            pickle.dump(bf_top_n, f, pickle.HIGHEST_PROTOCOL)
-
-    tr, ts = list(map(lambda x: extract_features(x, tf_top_n, bf_top_n), (tr, ts)))
-    (x_tr, y_tr), (x_ts, y_ts) = list(map(lambda x: prepare_dataset(x), (tr, ts)))
+    gaussian_naive_bayes(x_tr, y_tr, x_ts)
+    bernoulli_naive_bayes(x_tr, y_tr, x_ts)
 
 
 if __name__ == '__main__':
+    setup()
     main()

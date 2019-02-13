@@ -258,5 +258,6 @@ dmypy.json
 
 files/
 logs/
+results/
 
 !PLACEHOLDER

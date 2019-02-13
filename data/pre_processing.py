@@ -14,8 +14,7 @@ def pre_process(ds):
     for d in ds_pp:
         d['text_pp'] = d['text']
         d['text_pp'] = d['text_pp'].lower()
-        d['text_pp'] = d['text_pp'].strip()
-        d['text_pp'] = d['text_pp'].replace('<br /><br />', '')
+        d['text_pp'] = d['text_pp'].replace('<br /><br />', ' ')
         d['text_pp'] = d['text_pp'].translate(d['text_pp'].maketrans('', '', string.punctuation))
         d['text_pp'] = d['text_pp'].translate(d['text_pp'].maketrans('', '', string.digits))
         d['text_pp'] = word_tokenize(d['text_pp'], 'english')
