@@ -1,17 +1,16 @@
-from copy import deepcopy
+from sklearn.feature_extraction.text import TfidfVectorizer
+
+from .pre_processing import preprocessor, tokenizer
 
 
-def top_n_frequency(ds, fl, fs):
-    ds_tf = deepcopy(ds)
-    for d in ds_tf:
-        for f in fs:
-            d['top_n_fr_{fl}_{f}'.format(fl=fl, f=f.replace(' ', '_'))] = d[fl].get(f, 0)
-    return ds_tf
+def tf_idf_vectorizer(x_tr, ngram_range=(1, 1), vocabulary=None, binary=False, use_idf=True, smooth_idf=True):
+    tf_idf = TfidfVectorizer(preprocessor=preprocessor,
+                             tokenizer=tokenizer,
+                             ngram_range=ngram_range,
+                             vocabulary=vocabulary,
+                             binary=binary,
+                             use_idf=use_idf,
+                             smooth_idf=smooth_idf)
+    x_tr = tf_idf.fit_transform(x_tr)
 
-
-def top_n_occurrence(ds, fl, fs):
-    ds_to = deepcopy(ds)
-    for d in ds_to:
-        for f in fs:
-            d['top_n_oc_{fl}_{f}'.format(fl=fl, f=f.replace(' ', '_'))] = bool(d[fl].get(f, 0))
-    return ds_to
+    return x_tr, tf_idf
