@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 def load_data(dp):
     x = []
-    for fn in os.listdir(dp):
+    for fn in sorted(os.listdir(dp), key=lambda y: int(y[:-4])):
         with open('{dp}{fn}'.format(dp=dp, fn=fn), 'r') as f:
             x.append(f.read())
     return x
